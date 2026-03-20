@@ -8,7 +8,7 @@ pipeline {
 
     stages {
 
-        stage('Checkout SCM') {
+        stage('Checkout Code') {
             steps {
                 checkout scm
             }
@@ -22,8 +22,7 @@ pipeline {
 
         stage('Build App Image') {
             steps {
-                // Force rebuild to avoid cache issues
-                sh 'docker build --no-cache -t $IMAGE_NAME:$TAG .'
+                sh 'docker build -t $IMAGE_NAME:$TAG .'
             }
         }
 
@@ -32,33 +31,31 @@ pipeline {
                 sh '''
                 docker rm -f test-container || true
 
-                docker run -d -p 5001:5000 --name test-container $IMAGE_NAME:$TAG
+                docker run -d --network host --name test-container $IMAGE_NAME:$TAG
 
-                echo "Waiting for application to be ready..."
+                echo "Waiting for application..."
 
-                # Retry loop instead of fixed sleep
                 for i in {1..10}; do
-                    if curl -s http://localhost:5001/ > /dev/null; then
-                        echo "App is up!"
-                        break
-                    fi
-                    echo "Still starting..."
-                    sleep 3
+                  if curl -s http://localhost:5000/ > /dev/null; then
+                    echo "✅ App is up!"
+                    break
+                  fi
+                  echo "⏳ Still starting..."
+                  sleep 3
                 done
 
-                # Final check (fail if not reachable)
-                curl --fail http://localhost:5001/ || (docker logs test-container && exit 1)
+                curl --fail http://localhost:5000/ || (echo "❌ App failed" && docker logs test-container && exit 1)
                 '''
             }
         }
 
-        stage('Scan Image') {
+        stage('Scan Image (Trivy)') {
             steps {
-                sh 'trivy image --no-progress $IMAGE_NAME:$TAG'
+                sh 'trivy image $IMAGE_NAME:$TAG'
             }
         }
 
-        stage('Push Image') {
+        stage('Push to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
@@ -79,10 +76,10 @@ pipeline {
             sh 'docker rm -f test-container || true'
         }
         success {
-            echo "✅ Build & Push Successful: $IMAGE_NAME:$TAG"
+            echo "✅ Build Successful: $IMAGE_NAME:$TAG"
         }
         failure {
-            echo "❌ Build failed - check logs above."
+            echo "❌ Build Failed - Check logs above"
         }
     }
 }
