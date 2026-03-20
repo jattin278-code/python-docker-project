@@ -43,4 +43,27 @@ stages {
     }
 
     stage('Push Image') {
+        steps {
+            withCredentials([usernamePassword(
+                credentialsId: 'dockerhub-creds',
+                usernameVariable: 'jatin11',
+                passwordVariable: 'Admin@123'
+            )]) {
+                sh 'echo $PASS | docker login -u $USER --password-stdin'
+                sh 'docker push $IMAGE_NAME:$TAG'
+            }
+        }
+    }
+}
+
+post {
+    success {
+        echo "Build successful"
+    }
+    failure {
+        echo "Build failed"
+    }
+}
 ```
+
+}
