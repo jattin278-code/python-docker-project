@@ -20,14 +20,16 @@ pipeline {
             }
         }
 
-        stage('Run Container Test') {
-            steps {
-                sh 'docker run -d -p 5001:5000 --name test-container $IMAGE_NAME:$TAG'
-                sh 'sleep 5'
-                sh 'curl --fail http://localhost:5001'
-                sh 'docker rm -f test-container'
-            }
-        }
+       stage('Run Container Test') {
+    steps {
+        sh '''
+        docker rm -f test-container || true
+        docker run -d -p 5001:5000 --name test-container jattin278-code/python-app:8
+        sleep 10
+        curl --retry 5 --retry-delay 2 --fail http://localhost:5001
+        '''
+    }
+}
 
         stage('Scan Image') {
             steps {
