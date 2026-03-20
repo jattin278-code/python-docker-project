@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Upgrade pip
+RUN pip install --upgrade pip
+
+# Create non-root user (important for security)
+RUN useradd -m appuser
+USER appuser
