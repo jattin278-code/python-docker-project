@@ -4,15 +4,11 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
-
-ENV PATH="/home/appuser/.local/bin:$PATH"
+# 🔥 Install globally (important fix)
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
 COPY . .
 
 EXPOSE 5000
-
-# RUN AS ROOT (fix permission issue)
-USER root
 
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
