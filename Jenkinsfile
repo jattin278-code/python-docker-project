@@ -8,12 +8,6 @@ pipeline {
 
     stages {
 
-        stage('Clone Code') {
-            steps {
-                git 'https://github.com/jattin278-code/python-docker-project.git'
-            }
-        }
-
         stage('Build Base Image') {
             steps {
                 sh 'docker build -t my-python-base:1.0 -f Dockerfile.base .'
